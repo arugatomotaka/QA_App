@@ -18,7 +18,8 @@ class QuestionDetailActivity : AppCompatActivity(), DatabaseReference.Completion
     private lateinit var question: Question
     private lateinit var adapter: QuestionDetailListAdapter
     private lateinit var answerRef: DatabaseReference
-    private lateinit var databaseReference: DatabaseReference
+
+    //    private lateinit var databaseReference: DatabaseReference
     private lateinit var auth: FirebaseAuth
 
 
@@ -187,6 +188,45 @@ class QuestionDetailActivity : AppCompatActivity(), DatabaseReference.Completion
             }
         })
 
+
+    }
+
+    override fun onResume() {
+        super.onResume()
+        val user = FirebaseAuth.getInstance().currentUser
+        if (user != null) {
+            binding.favoriteImageView.visibility = View.VISIBLE
+            val user = FirebaseAuth.getInstance().currentUser!!.uid
+            val dataBase = FirebaseDatabase.getInstance().reference
+
+            val favoriteRef =
+                dataBase.child(FavoritesPath).child(user).child(question.questionUid)
+
+            binding.favoriteImageView.setOnClickListener {
+                //リファレンスに対して、オフラインキャッシュの同期を無効にするためのメソッドです。これにより、指定されたリファレンスのデータはオフライン時に自動的に同期されなくなります。
+                favoriteRef.keepSynced(false)
+
+                favoriteRef.addListenerForSingleValueEvent(object : ValueEventListener {
+
+                    override fun onDataChange(snapshot: DataSnapshot) {
+                        val data = snapshot.value as Map<*, *>?
+                        favoriteprocess(favoriteRef, data == null)
+                    }
+
+                    override fun onCancelled(error: DatabaseError) {
+                        Toast.makeText(
+                            this@QuestionDetailActivity,
+                            "データの処理に失敗しました。再試行してください。",
+                            Toast.LENGTH_LONG
+                        ).show()
+                    }
+                })
+            }
+            starchange()
+        }
+
+
     }
 
 }
+
